@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="UTF-8">
+	<title>Document</title>
+	<style>
+		.image-view {
+			width: 240px;
+			height: 240px;
+			margin: 20px auto;
+			position: relative;
+			overflow: hidden;
+			user-select: none;
+		}
+		.on-image {
+			width: 160px;
+			height: 160px;
+			position: absolute;
+			top: 50%;
+			left: 50%;
+			transform: translate(-50%, -50%);
+		}
+		.move-div {
+		  position: absolute;
+		  top: 0;
+		  left: 0;
+		  width: 100%;
+		  height: 100%;
+		  cursor: move;
+		  box-shadow: 0px 0px 0px 300px rgba(240, 241, 242, 0.8);
+		}
+		img {
+			width: 100%;
+			position: absolute;
+			max-width: none;
+			transform-origin: 80px 80px;
+		}
+		.image-handle {
+			margin: 0 auto;
+			width: 240px;
+		}
+	</style>
+</head>
+<body>
+	<div class="image-view">
+		<div class="on-image">
+			<img src="./pic.png" alt="" id="image-place">
+			<div class="move-div" id="move-div"></div>
+		</div>
+	</div>
+	<div class="image-handle">
+	    <input class="image-size-ranger" type="range" min="1" max="2" step="0.01" value="1">
+	</div>
+
+	<script>
+		var $moveDiv = document.getElementById('move-div')
+		var $html = document.querySelector('html')
+		var $imagePlace = document.getElementById('image-place')
+		var $imageRange = document.querySelector('.image-size-ranger')
+		var isHold = false
+		var oldPosition = {}
+		var imageOldPosition = {}
+		var maxPosition = {'x': 0, 'y': 0}
+		var place = {ratio: 1, left: 80, top: 80}
+
+
+		function getElementTop(element){
+			return element.getBoundingClientRect().top
+　　}
+
+		function getElementLeft(element){
+			return element.getBoundingClientRect().left
+　　}
+
+		$moveDiv.addEventListener('mousedown', function (event) {
+			isHold = true
+			oldPosition = {
+				'x': event.offsetX,
+				'y': event.offsetY
+			}
+
+			imageOldPosition = {
+				'x': parseFloat(window.getComputedStyle($imagePlace).left),
+				'y': parseFloat(window.getComputedStyle($imagePlace).top)
+			}
+
+		})
+
+
+		$html.addEventListener('mousemove', function (event) {
+			if (isHold) {
+				// 移动距离
+				var top = event.pageY - oldPosition.y - getElementTop($moveDiv)
+				var left = event.pageX - oldPosition.x - getElementTop($moveDiv)
+
+				var width = $moveDiv.clientWidth
+				var height = $moveDiv.clientHeight
+
+				var maxHeight = $imagePlace.clientHeight * place.ratio
+				var maxWidth = $imagePlace.clientWidth * place.ratio
+
+				if (top > -maxPosition.y) top = -maxPosition.y;
+
+				var lastDistance = - (maxHeight + maxPosition.y - height);
+
+				if (top < lastDistance) top = lastDistance
+
+				top = top + imageOldPosition.y
+
+				place.top = (-top + height / 2) / maxHeight * 100 + '%'
+				place.left = (0 + width / 2) / maxWidth * 100 + '%'
+
+				$imagePlace.style.top = top + 'px'
+			}
+		})
+
+		$imageRange.addEventListener('input', function (e) {
+			var ratio = e.target.value
+			place.ratio = ratio
+			// console.log(place.left)
+			// console.log(place.top)
+			$imagePlace.style['transform-origin'] = place.left + ' ' + place.top
+
+			$imagePlace.style.transform = 'scale(' + ratio + ')'
+
+			var width = $moveDiv.clientWidth
+			var height = $moveDiv.clientHeight
+
+			maxPosition = {
+				'x': getElementLeft($imagePlace) - getElementLeft($moveDiv),
+				'y': getElementTop($imagePlace) - getElementTop($moveDiv)
+			}
+		})
+
+		$html.addEventListener('mouseup', function() {
+		    isHold = false
+		});
+	</script>
+</body>
+</html>
