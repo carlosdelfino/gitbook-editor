@@ -1,4 +1,4 @@
-import { app, BrowserWindow } from 'electron'
+import { app, BrowserWindow, dialog } from 'electron'
 
 /**
  * Set `__static` path to static files in production
@@ -24,6 +24,8 @@ function createWindow () {
   })
 
   mainWindow.loadURL(winURL)
+
+  // console.log(dialog.showOpenDialog({properties: ['openDirectory']}))
 
   mainWindow.on('closed', () => {
     mainWindow = null

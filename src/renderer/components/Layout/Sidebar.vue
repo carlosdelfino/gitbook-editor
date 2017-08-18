@@ -30,6 +30,9 @@ export default {
 </script>
 
 <style lang="css" scoped>
+.menu {
+  user-select: none;
+}
 .tabs {
 	display: flex;
   height: 36px;
@@ -49,5 +52,8 @@ export default {
 .tab.active {
 	color: #666;
 	box-shadow: inset 0px -1px #00C28B;
+}
+.main {
+  margin-top: 10px;
 }
 </style>

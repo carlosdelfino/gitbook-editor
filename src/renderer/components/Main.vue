@@ -68,6 +68,10 @@
     position: relative;
   }
 
+  ul {
+    list-style: none;
+  }
+
   *::-webkit-scrollbar {
     width: 8px;
   }

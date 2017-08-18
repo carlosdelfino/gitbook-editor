@@ -6,7 +6,7 @@
 
 <script>
   export default {
-    name: 'editor'
+    name: 'App'
   }
 </script>
 
