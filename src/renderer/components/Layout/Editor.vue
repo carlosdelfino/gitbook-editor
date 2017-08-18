@@ -6,11 +6,11 @@
 
 <script>
 
-const { State } = require('markup-it');
-const markdown = require('markup-it/lib/markdown');
-const html = require('markup-it/lib/html');
+const { State } = require('markup-it/src/index');
+const markdown = require('markup-it/src/markdown');
+const html = require('markup-it/src/html');
 
-import { markdownEditor } from 'vue-simplemde'
+import markdownEditor from './markdown-editor'
 
 export default {
 
