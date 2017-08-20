@@ -1,27 +1,27 @@
 <template>
-	<li :class="{folder: isFolder}">
-    <input type="text" :value="model.title" v-model="renameValue" v-if="editing" @keyup.enter="doRename" @keydown.esc.stop="cancel" @blur="cancel" ref="renameInput">
+	<li :class="{introduction: model.introduction}">
     <div
-    	v-else
-    	@contextmenu="context"
+      @contextmenu.stop.prevent="showContext"
     	@click="edit"
-      @dblclick="rename"
-      :class="{active: activePath === model.path}">
+      @dblclick="edit"
+      :class="{block: true, folder: isFolder, active: activePath === model.path}">
       {{model.introduction ? model.title : model.level + '. ' + model.title}}
-      <!-- <span v-if="isFolder">[{{open ? '-' : '+'}}]</span> -->
     </div>
-    <ul v-show="open" v-if="isFolder">
+    <ul v-show="open" v-if="isFolder" class="articles" ref="articleList">
       <item
         class="item"
         v-for="model in model.articles"
-        :model="model" :key="model.level" @update="updateSummary">
+        :model="model" :key="model.level" @context="showContext">
       </item>
     </ul>
   </li>
 </template>
 
 <script>
+const Sortable = require('sortablejs');
+
 import { mapActions, mapGetters } from 'vuex'
+
 export default {
 
   name: 'Item',
@@ -31,8 +31,7 @@ export default {
   data () {
     return {
     	open: true,
-    	editing: false,
-    	renameValue: this.model.title
+      sortable: null
     };
   },
   computed: {
@@ -50,38 +49,32 @@ export default {
   	toggle () {
   		this.open = !this.open
   	},
-  	rename () {
-  		this.editing = true
-  		this.$nextTick(function () {
-  			this.$refs.renameInput.focus()
-  		})
-  	},
   	edit () {
   		this.setPath(this.model.path)
   	},
-  	context () {
-  		console.log('context')
-  	},
-  	doRename () {
-  		if (this.renameValue.length && this.model.title !== this.renameValue) {
-  			this.model.title = this.renameValue
-  			this.$emit('update')
-  		}
-  		this.editing = false
-  	},
-  	cancel () {
-  		this.renameValue = this.model.title
-  		this.editing = false
-  	},
-  	updateSummary () {
-  		this.$emit('update')
-  	}
+    showContext (event) {
+      this.$emit('context', {
+        model: event.model || this.model,
+        event: event.event || event
+      })
+    }
+  },
+  mounted () {
+    if (this.$refs.articleList) {
+      if (this.sortable) {
+        this.sortable.destroy()
+        this.sortable = null
+      }
+      this.sortable = new Sortable(this.$refs.articleList, {
+        group: "articles"
+      })  
+    }
   }
 };
 </script>
 
 <style lang="css" scoped>
-.folder > div{
+.folder{
 	font-weight: bold;
 }
 
@@ -100,7 +93,7 @@ li > div, li > input {
 	padding: 10px;
 }
 
-li > div:hover, li.active > div {
+li > div:hover {
 	color: #00C28B;
 }
 

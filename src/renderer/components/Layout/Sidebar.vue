@@ -2,7 +2,7 @@
 	<div class="menu">
 		<div class="tabs">
 			<a :class="['tab', {active: active === 'dir'}]" @click="active = 'dir'">目录</a>
-			<a :class="['tab', {active: active === 'toc'}]" @click="active = 'toc'">TOC</a>			
+			<a :class="['tab', {active: active === 'toc'}]" @click="active = 'toc'">TOC</a>
 		</div>
 		<div class="main">
 			<Toc v-if="active === 'toc'"></Toc>
@@ -32,6 +32,8 @@ export default {
 <style lang="css" scoped>
 .menu {
   user-select: none;
+  position: relative;
+  height: 100%;
 }
 .tabs {
 	display: flex;
@@ -39,6 +41,8 @@ export default {
   line-height: 36px;
   padding: 0 40px;
   box-shadow: 0px 0px 2px #ccc;
+  position: absolute;
+  width: 100%;
 }
 .tab {
 	font-size: 13px;
@@ -54,6 +58,7 @@ export default {
 	box-shadow: inset 0px -1px #00C28B;
 }
 .main {
-  margin-top: 10px;
+  padding-top: 36px;
+  height: 100%;
 }
 </style>

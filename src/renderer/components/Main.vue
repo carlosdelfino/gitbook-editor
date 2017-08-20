@@ -43,6 +43,7 @@
     font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol";
     font-size: 14px;
     height: 100%;
+    -webkit-font-smoothing: antialiased;
   }
   #app {
     height: 100%;
@@ -66,6 +67,26 @@
   .right-side {
     flex: 1;
     position: relative;
+  }
+  button[class^=btn] {
+    border: none;
+    border-radius: 3px;
+    min-width: 100px;
+    padding: 10px;
+    outline: none;
+    cursor: pointer;
+    font-size: 14px;
+  }
+  .btn-primary {
+    border: 1px solid #00C28B;
+    background-color: #00C28B;
+    color: #fff;
+  }
+  .btn-secondary {
+    color: rgba(0,0,0,.85);
+    background-color: #eee;
+    border: 1px solid #d3d3d3;
+    color: #333;
   }
 
   ul {

@@ -1,7 +1,24 @@
 <template>
-	<ul>
-		<item :model="chapter" v-for="chapter in summary.chapters" class="item" :key="chapter.level" @update="updateSummary"></item>
-	</ul>
+  <div class="tree">
+    <ul ref="articleList">
+      <item :model="chapter" v-for="chapter in summary.chapters" class="item" :key="chapter.level" @context="showContext"></item>
+    </ul>
+    <div class="create-btn" @click="toggleModal(true);actionType='new_section'">新建层级</div>
+    <context-menu class="right-menu"
+        :show="contextMenuVisible" ref="contextMenu"
+        @update:show="toggleContextMenu">
+        <a v-if="!contextItem.introduction" @click="editPointer">编辑指向</a>
+        <a v-if="!contextItem.introduction" @click="toggleModal(true);actionType='new_article'">新建文章</a>
+        <a @click="toggleModal(true);actionType='new_section'">新建同级</a>
+        <a v-if="!contextItem.introduction" @click="deleteArticle">删除</a>
+    </context-menu>
+    <modal :title="'文章配置'" @confirm="createArticle" @update:show="toggleModal" :show="modalVisible">
+      <input type="text" placeholder="文章名称" autofocus="true" ref="createInput" v-model="articleName">
+      <input type="text" placeholder="文章路径" v-model="articlePath">
+      <button class="btn-secondary" @click="chooseFile">选择文件</button>
+      <p>{{articleHint}}</p>
+    </modal>
+  </div>
 </template>
 
 <script>
@@ -9,45 +26,62 @@
 const path = require('path')
 const fs = require('fs')
 const gitbookParsers = require("gitbook-parsers");
+const {dialog} = require('electron').remote;
+const Sortable = require('sortablejs');
 
 import Item from '../Unit/Item'
+import ContextMenu from '../Unit/context-menu'
+import Modal from '../Unit/modal'
 
 export default {
 
   name: 'Tree',
 
-  components: { Item },
+  components: { Item, ContextMenu, Modal },
 
   data () {
   	return {
-			// chapters: [
-			// 	{
-			// 		articles: [],
-			// 		exists: bool,
-			// 		external: bool,
-			// 		introduction: bool,
-			// 		level: "1.1",
-			// 		path: '',
-			// 		title: ''			
-			// 	}
-			// ]
-  		summary: {}
+  		summary: {},
+      content: '',
+      contextItem: {},
+      contextMenuVisible: false,
+      modalVisible: false,
+      rootPath: '/Users/curly/GitBook/Library/Import/book',
+      articleName: '',
+      articlePath: '',
+      articleHint: '',
+      actionType: '',
+      sortable: null
   	}
   },
   mounted () {
-  	const content = fs.readFileSync(
-  		path.join('/Users/curly/GitBook/Library/Import/book', 'SUMMARY.md'),
+  	this.content = fs.readFileSync(
+  		path.join(this.rootPath, 'SUMMARY.md'),
   		'utf8'
   	)
-  	const parser = gitbookParsers.get('markdown')
-  	const _this = this
+  },
+  watch: {
+    content () {
+      const parser = gitbookParsers.get('markdown')
+      const _this = this
 
-  	parser.summary(content).then(function (summary) {
-  		_this.summary = summary
-  	})
+      parser.summary(this.content).then(function (summary) {
+        _this.summary = summary
+      })
+    },
+    summary () {
+      if (this.sortable) {
+        this.sortable.destroy()
+        this.sortable = null
+      }
+      this.sortable = new Sortable(this.$refs.articleList, {
+        group: "articles",
+        filter: ".introduction"
+      })
+    }
   },
   methods: {
-  	updateSummary (msg) {
+  	updateSummary () {
   		let lines = []
   		if (this.summary.chapters && this.summary.chapters.length) {
   			this.summary.chapters.forEach((chapter) => {
@@ -55,12 +89,16 @@ export default {
   			})
   		}
   		lines.unshift('# Summary')
-  		
-  		fs.writeFileSync(
-				path.join('/Users/curly/GitBook/Library/Import/book', 'SUMMARY.md'),
-				lines.join('\n'),
-				'utf8'
-  		)
+
+      const content = lines.join('\n')
+
+      fs.writeFileSync(
+        path.join(this.rootPath, 'SUMMARY.md'),
+        content,
+        'utf8'
+      )
+
+      return content
   	},
   	buildDirectory (directory, result, level) {
   		const _this = this;
@@ -75,11 +113,178 @@ export default {
 			directory.articles.forEach(function (article) {
 				_this.buildDirectory(article, result, level + 1)
 			})
-  	}
+  	},
+    showContext (item) {
+      this.contextItem = item.model
+      this.contextMenuVisible = true
+      this.$refs.contextMenu.contextMenuHandler(item.event)
+    },
+    toggleContextMenu (show) {
+      this.contextMenuVisible = show
+    },
+    toggleModal (show) {
+      this.contextMenuVisible = false
+      this.modalVisible = show
+      if (show === false) {
+        this.articleName = ''
+        this.articlePath = ''
+        this.articleHint = ''
+      } else {
+        this.$nextTick(() => {
+          this.$refs.createInput.focus()
+        })
+      }
+    },
+    chooseFile () {
+      let filePath = dialog.showOpenDialog({properties: ['openFile'], defaultPath: this.rootPath})
+
+      if (filePath) {
+        filePath = filePath[0]
+        if (~filePath.indexOf(this.rootPath)) {
+          this.articlePath = filePath.replace(this.rootPath, '')
+        }  
+      }
+      
+    },
+    createArticle () {
+      if (this.articleName && this.articlePath) {
+        const result = this.actionHandle(this.contextItem)
+        if (!result) {
+          this.articleName = ''
+          this.articlePath = ''
+          this.articleHint = ''
+          this.contextMenuVisible = false
+          this.modalVisible = false
+        } else {
+          this.articleHint = result
+        }
+      } else {
+        this.articleHint = '文章名称和文章路径不能为空'
+      }
+    },
+    deleteArticle () {
+      this.actionType = 'delete'
+      this.actionHandle(this.contextItem)
+      this.contextMenuVisible = false
+    },
+    editPointer () {
+      this.toggleModal(true);
+      this.actionType = 'edit_article';
+      this.articleName = this.contextItem.title
+      this.articlePath = this.contextItem.path 
+    },
+    actionHandle (target) {
+      let levels = target.level ? target.level.split('.') : [this.summary.chapters.length]
+      let level = levels.shift()
+      let article = this.summary.chapters[level]
+      let parent = this.summary.chapters
+
+      while (levels.length) {
+        level = levels.shift() - 1
+        parent = article.articles
+        article = article.articles[level]
+      }
+
+      if (this.actionType === 'delete') {
+        // 底下没有文章,把自个删了；底下有文章，把文章移到父级下，把自个删了
+        if (article.articles.length === 0) {
+          parent.splice(level, 1)
+        } else {
+          parent.splice(level, 1)
+          article.articles.forEach(function (article, index) {
+            parent.splice(level + index, 0, article)
+          })
+        }  
+      }
+
+      if (~['new_article', 'new_section', 'edit_article'].indexOf(this.actionType)) {
+        const filePath = path.join(this.rootPath, this.articlePath);
+        let createResult;
+
+        if (!fs.existsSync(filePath)) {
+           createResult = fs.closeSync(fs.openSync(filePath, 'w'))
+        }
+
+        if (createResult) {
+          return createResult
+        } else {
+          if (this.actionType === 'new_article') {
+            article.articles.push({
+              title: this.articleName,
+              path: this.articlePath,
+              articles: []
+            })
+          }
+          if (this.actionType === 'new_section') {
+            parent.splice(parseInt(level) + 1, 0, {
+              title: this.articleName,
+              path: this.articlePath,
+              articles: []
+            })
+          }
+          if (this.actionType === 'edit_article') {
+            article.title = this.articleName
+            article.path = this.articlePath
+          }
+        }          
+      }
+      this.content = this.updateSummary()
+    }
   }
-};
+}
 </script>
 
 <style lang="css" scoped>
-
+  .tree {
+    position: relative;
+    height: 100%;
+  }
+  .tree > ul {
+    overflow-y: auto; 
+    height: 100%;
+    padding-bottom: 38px;
+  }
+  .right-menu {
+    min-width: 100px;
+    max-width: 120px;
+    padding: 5px 0;
+    border-radius: 3px;
+    background-color: #fff;
+    box-shadow: 0px 0px 2px 0px #999;
+    position: fixed;
+    z-index: 999;
+    color: rgba(0, 0, 0, 0.8);
+  }
+  .right-menu a {
+    display: block;
+    height: 30px;
+    line-height: 30px;
+    padding: 0 10px;
+    cursor: pointer;
+  }
+  .right-menu a:hover {
+    background: #00C28B;
+    color: #fff;
+  }
+  input {
+    height: 36px;
+    border: 1px solid rgba(0,0,0,.14);
+    border-radius: 2px;
+    height: 36px;
+    outline: none;
+    width: 100%;
+    padding: 0 12px;
+    font-size: 14px;
+    margin-bottom: 10px;
+  }
+  .create-btn {
+    text-align: center;
+    padding: 10px;
+    background-color: #00C28B;
+    color: #fff;
+    cursor: pointer;
+    position: absolute;
+    bottom: 0;
+    width: 100%;
+  }
 </style>

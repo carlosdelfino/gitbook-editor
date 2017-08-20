@@ -34,6 +34,7 @@ export default {
     	input: '',
       timer: null,
       configs: {
+        autofocus: true,
         spellChecker: false,
         status: false,
         toolbar: ['bold', 'italic', 'strikethrough', '|', 'link', 'image', 'table', '|', 'heading', 'heading-1', 'heading-2', 'heading-3', '|', 'quote', 'ordered-list', 'unordered-list', 'side-by-side', 'fullscreen'],
@@ -120,10 +121,6 @@ export default {
 
 .editor-toolbar a  {
   opacity: 0.6;
-}
-
-.editor-toolbar .fa-columns {
-  display: none;
 }
 
 .editor-toolbar .fa-arrows-alt {
