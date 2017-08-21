@@ -343,17 +343,6 @@ export default {
     background: #00C28B;
     color: #fff;
   }
-  input {
-    height: 36px;
-    border: 1px solid rgba(0,0,0,.14);
-    border-radius: 2px;
-    height: 36px;
-    outline: none;
-    width: 100%;
-    padding: 0 12px;
-    font-size: 14px;
-    margin-bottom: 10px;
-  }
   .create-btn {
     text-align: center;
     padding: 10px;

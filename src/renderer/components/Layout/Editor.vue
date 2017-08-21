@@ -1,6 +1,16 @@
 <template>
-  
+  <div class="editor">
     <markdown-editor v-model="input" ref="markdownEditor" :configs="configs" preview-class="gitbook-markdown-body"></markdown-editor>
+    <modal :title="'添加链接'" @confirm="insertLink" @update:show="toggleModal" :show="linkModalVisible">
+      <input type="text" placeholder="标题" autofocus="true" v-model="linkTitle">
+      <input type="text" placeholder="URL" v-model="linkPath">
+    </modal>
+    <modal :title="'添加图片'" @confirm="insertImage" @update:show="toggleModal" :show="imageModalVisible">
+      <input type="text" placeholder="标题" autofocus="true" v-model="imageTitle">
+      <input type="text" placeholder="图片URL" v-model="imagePath">
+      <button class="btn-secondary" @click="chooseFile">选择文件</button>
+    </modal>
+  </div>
 </template>
 
 <script>
@@ -15,6 +25,7 @@ const htmlSyntax = require('markup-it/syntaxes/html');
 
 const fs = require('fs');
 const path = require('path');
+const {dialog} = require('electron').remote;
 
 const markdown = new MarkupIt(markdownSyntax);
 const html = new MarkupIt(htmlSyntax);
@@ -36,10 +47,19 @@ export default {
       linkModalVisible: false,
       linkPath: '',
       linkTitle: '',
+      imageModalVisible: false,
+      imagePath: '',
+      imageTitle: '',
+      rootPath: '/Users/curly/GitBook/Library/Import/book',
       configs: {
         autofocus: true,
         spellChecker: false,
         status: false,
+        insertTexts: {
+          horizontalRule: ["", "\n\n-----\n\n"],
+          image: ["![](http://", ")"],
+          link: ["[", "]()"],
+        },
         toolbar: ['bold', 'italic', 'strikethrough', '|', {
           name: 'link',
           action: () => {
@@ -47,7 +67,14 @@ export default {
           },
           className: 'fa fa-link',
           title: '链接'
-        }, 'image', 'table', '|', 'heading', 'heading-1', 'heading-2', 'heading-3', '|', 'quote', 'ordered-list', 'unordered-list', 'side-by-side', 'fullscreen'],
+        }, {
+          name: 'image',
+          action: () => {
+            this.imageModalVisible = true
+          },
+          className: 'fa fa-picture-o',
+          title: '插入图片'
+        }, 'table', '|', 'heading', 'heading-1', 'heading-2', 'heading-3', '|', 'quote', 'ordered-list', 'unordered-list', 'side-by-side', 'fullscreen'],
         previewRender: function (plainText) {
           const content = markdown.toContent(plainText)
           return html.toText(content)
@@ -86,19 +113,37 @@ export default {
       if (filePath) {
         filePath = filePath[0]
         if (~filePath.indexOf(this.rootPath)) {
-          this.articlePath = filePath.replace(this.rootPath, '')
+          this.imagePath = filePath.replace(this.rootPath, '')
         }
       }
     },
     toggleModal (show) {
       if (show === false) {
         this.linkModalVisible = false
+        this.imageModalVisible = false
         this.linkTitle = ''
         this.linkPath = ''
+        this.imageTitle = ''
+        this.imagePath = ''
       }
     },
     insertLink () {
-      this.simplemde.drawLink()
+      if (this.linkPath) {
+        this.simplemde.options.insertTexts.link = ["[" + this.linkTitle, "](" + this.linkPath + ")"]
+        this.simplemde.drawLink()
+        this.linkModalVisible = false
+        this.linkTitle = ''
+        this.linkPath = ''  
+      }
+    },
+    insertImage () {
+      if (this.imagePath) {
+        this.simplemde.options.insertTexts.image = ["![" + this.imageTitle + "](" + this.imagePath, ")"]
+        this.simplemde.drawImage()
+        this.imageModalVisible = false
+        this.imageTitle = ''
+        this.imagePath = ''  
+      }
     },
     doSave () {
       fs.writeFileSync(

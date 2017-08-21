@@ -1,5 +1,5 @@
 const state = {
-  article: ''
+  article: localStorage.getItem('articlePath')
 }
 
 const mutations = {
@@ -12,6 +12,7 @@ const actions = {
   setPath ({ commit }, path) {
     // do something async
     commit('SET_ARTICLE_PATH', path)
+    localStorage.setItem('articlePath', path)
   }
 }
 
