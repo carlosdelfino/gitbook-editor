@@ -6,9 +6,14 @@ Vue.use(Router)
 export default new Router({
   routes: [
     {
-      path: '/',
+      path: '/main',
       name: 'main',
       component: require('@/components/Main')
+    },
+    {
+      path: '/',
+      name: 'index',
+      component: require('@/components/Index')
     },
     {
       path: '*',

@@ -33,6 +33,8 @@ import Item from '../Unit/Item'
 import ContextMenu from '../Unit/context-menu'
 import Modal from '../Unit/modal'
 
+import { mapGetters } from 'vuex'
+
 export default {
 
   name: 'Tree',
@@ -45,7 +47,6 @@ export default {
       contextItem: {},
       contextMenuVisible: false,
       modalVisible: false,
-      rootPath: '/Users/curly/GitBook/Library/Import/book',
       articleName: '',
       articlePath: '',
       articleHint: '',
@@ -55,7 +56,7 @@ export default {
   },
   mounted () {
   	const content = fs.readFileSync(
-  		path.join(this.rootPath, 'SUMMARY.md'),
+  		path.join(this.currentLibrary.path, 'SUMMARY.md'),
   		'utf8'
   	)
     this.parseSummary(content)
@@ -64,6 +65,11 @@ export default {
     summary () {
       this.initSortable()
     }
+  },
+  computed: {
+    ...mapGetters({
+      currentLibrary: 'getLibrary'
+    })
   },
   methods: {
     initSortable () {
@@ -114,7 +120,7 @@ export default {
       const content = lines.join('\n')
 
       fs.writeFileSync(
-        path.join(this.rootPath, 'SUMMARY.md'),
+        path.join(this.currentLibrary.path, 'SUMMARY.md'),
         content,
         'utf8'
       )
@@ -163,12 +169,12 @@ export default {
       }
     },
     chooseFile () {
-      let filePath = dialog.showOpenDialog({properties: ['openFile'], defaultPath: this.rootPath})
+      let filePath = dialog.showOpenDialog({properties: ['openFile'], defaultPath: this.currentLibrary.path})
 
       if (filePath) {
         filePath = filePath[0]
-        if (~filePath.indexOf(this.rootPath)) {
-          this.articlePath = filePath.replace(this.rootPath, '')
+        if (~filePath.indexOf(this.currentLibrary.path)) {
+          this.articlePath = filePath.replace(this.currentLibrary.path, '')
         }  
       }
       
@@ -275,7 +281,7 @@ export default {
       }
 
       if (~['new_article', 'new_section', 'new_section_outer', 'edit_article'].indexOf(this.actionType)) {
-        const filePath = path.join(this.rootPath, this.articlePath);
+        const filePath = path.join(this.currentLibrary.path, this.articlePath);
         let createResult;
 
         if (!fs.existsSync(filePath)) {

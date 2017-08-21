@@ -14,11 +14,6 @@
 </template>
 
 <script>
-
-// const { State } = require('markup-it');
-// const markdown = require('markup-it/lib/markdown');
-// const html = require('markup-it/lib/html');
-// 
 const MarkupIt = require('markup-it');
 const markdownSyntax = require('markup-it/syntaxes/markdown');
 const htmlSyntax = require('markup-it/syntaxes/html');
@@ -50,8 +45,8 @@ export default {
       imageModalVisible: false,
       imagePath: '',
       imageTitle: '',
-      rootPath: '/Users/curly/GitBook/Library/Import/book',
       configs: {
+        autoDownloadFontAwesome: false,
         autofocus: true,
         spellChecker: false,
         status: false,
@@ -84,13 +79,14 @@ export default {
   },
   computed: {
     ...mapGetters({
-      articlePath: 'getPath'
+      articlePath: 'getPath',
+      currentLibrary: 'getLibrary'
     }),
     simplemde () {
       return this.$refs.markdownEditor.simplemde
     },
     filePath (val) {
-      return path.join('/Users/curly/GitBook/Library/Import/book', '/', this.articlePath)
+      return path.join(this.currentLibrary.path, this.articlePath)
     }
   },
   watch: {
@@ -108,12 +104,12 @@ export default {
   },
   methods: {
     chooseFile () {
-      let filePath = dialog.showOpenDialog({properties: ['openFile'], defaultPath: this.rootPath})
+      let filePath = dialog.showOpenDialog({properties: ['openFile'], defaultPath: this.currentLibrary.path})
 
       if (filePath) {
         filePath = filePath[0]
-        if (~filePath.indexOf(this.rootPath)) {
-          this.imagePath = filePath.replace(this.rootPath, '')
+        if (~filePath.indexOf(this.currentLibrary.path)) {
+          this.imagePath = filePath.replace(this.currentLibrary.path, '')
         }
       }
     },
@@ -177,6 +173,7 @@ export default {
   width: 50%;
   text-align: right;
   left: 100%;
+  /*top: 30px;*/
   top: 5px;
   transform: translateX(-100%);
 }

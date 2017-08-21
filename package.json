@@ -1,6 +1,6 @@
 {
-  "name": "editor",
-  "version": "0.0.0",
+  "name": "TickEditor",
+  "version": "0.0.1",
   "author": "curly <curly@appest.com>",
   "description": "An electron-vue project",
   "license": null,
@@ -53,6 +53,7 @@
   "dependencies": {
     "axios": "^0.16.1",
     "domutils": "1.5.1",
+    "electron-store": "^1.2.0",
     "gitbook-markdown": "^2.0.1",
     "gitbook-parsers": "^0.8.9",
     "markup-it": "2.5.0",
