@@ -11,7 +11,7 @@
       <item
         class="item"
         v-for="model in model.articles"
-        :model="model" :key="model.level" @context="showContext">
+        :model="model" :key="model.level" @sort="sortSummary" @context="showContext">
       </item>
     </ul>
   </li>
@@ -42,6 +42,14 @@ export default {
   		return this.model.articles.length > 0
   	}
   },
+  watch: {
+    'model.articles' () {
+      this.initSortable()
+    }
+  },
+  mounted () {
+    this.initSortable()
+  },
   methods: {
   	...mapActions([
       'setPath'
@@ -57,17 +65,41 @@ export default {
         model: event.model || this.model,
         event: event.event || event
       })
-    }
-  },
-  mounted () {
-    if (this.$refs.articleList) {
-      if (this.sortable) {
-        this.sortable.destroy()
-        this.sortable = null
+    },
+    sortSummary (data) {
+      this.$emit('sort', data)
+    },
+    initSortable () {
+      if (this.$refs.articleList) {
+        if (this.sortable) {
+          this.sortable.destroy()
+          this.sortable = null
+        }
+        const self = this
+        let oldRelated = null
+        let toSection = ''
+        let fromSection = ''
+        this.sortable = new Sortable(this.$refs.articleList, {
+          group: "articles",
+          animation: 150,
+          onStart (evt) {
+            const regexp = evt.to.parentNode.querySelector('.block').innerText.match(/([\d\.]+)\.\s/)
+            fromSection = regexp && regexp[1]
+          },
+          onEnd (evt) {
+            self.$emit('sort', {
+              fromLevel: fromSection, 
+              toLevel: toSection, 
+              oldIndex: evt.oldIndex, 
+              newIndex: evt.newIndex
+            })
+          },
+          onMove: function (/**Event*/evt, /**Event*/originalEvent) {
+            const regexp = evt.to.parentNode.querySelector('.block').innerText.match(/([\d\.]+)\.\s/)
+            toSection = regexp && regexp[1]
+          }
+        })  
       }
-      this.sortable = new Sortable(this.$refs.articleList, {
-        group: "articles"
-      })  
     }
   }
 };

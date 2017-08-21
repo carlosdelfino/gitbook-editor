@@ -1,9 +1,9 @@
 <template>
   <div class="tree">
     <ul ref="articleList">
-      <item :model="chapter" v-for="chapter in summary.chapters" class="item" :key="chapter.level" @context="showContext"></item>
+      <item :model="chapter" v-for="chapter in summary.chapters" class="item" :key="chapter.level" @context="showContext" @sort="updateSummaryBySort"></item>
     </ul>
-    <div class="create-btn" @click="toggleModal(true);actionType='new_section'">新建层级</div>
+    <div class="create-btn" @click="toggleModal(true);actionType='new_section_outer'">新建层级</div>
     <context-menu class="right-menu"
         :show="contextMenuVisible" ref="contextMenu"
         @update:show="toggleContextMenu">
@@ -42,7 +42,6 @@ export default {
   data () {
   	return {
   		summary: {},
-      content: '',
       contextItem: {},
       contextMenuVisible: false,
       modalVisible: false,
@@ -55,32 +54,54 @@ export default {
   	}
   },
   mounted () {
-  	this.content = fs.readFileSync(
+  	const content = fs.readFileSync(
   		path.join(this.rootPath, 'SUMMARY.md'),
   		'utf8'
   	)
+    this.parseSummary(content)
   },
   watch: {
-    content () {
-      const parser = gitbookParsers.get('markdown')
-      const _this = this
-
-      parser.summary(this.content).then(function (summary) {
-        _this.summary = summary
-      })
-    },
     summary () {
-      if (this.sortable) {
-        this.sortable.destroy()
-        this.sortable = null
-      }
-      this.sortable = new Sortable(this.$refs.articleList, {
-        group: "articles",
-        filter: ".introduction"
-      })
+      this.initSortable()
     }
   },
   methods: {
+    initSortable () {
+      if (this.$refs.articleList) {
+        if (this.sortable) {
+          this.sortable.destroy()
+          this.sortable = null
+        }
+        const self = this
+        let oldRelated = null
+        let toSection = ''
+        let fromSection = ''
+        this.sortable = new Sortable(this.$refs.articleList, {
+          group: "articles",
+          filter: ".introduction",
+          animation: 150,
+          onStart (evt) {
+            const regexp = evt.to.parentNode.querySelector('.block').innerText.match(/([\d\.]+)\.\s/)
+            fromSection = regexp && regexp[1]
+          },
+          onEnd (evt) {
+            self.updateSummaryBySort({
+              fromLevel: fromSection, 
+              toLevel: toSection, 
+              oldIndex: evt.oldIndex, 
+              newIndex: evt.newIndex
+            })
+          },
+          onMove: function (/**Event*/evt, /**Event*/originalEvent) {
+            const regexp = evt.to.parentNode.querySelector('.block').innerText.match(/([\d\.]+)\.\s/)
+            toSection = regexp && regexp[1]
+          }
+        })  
+      }
+    },
+    updateSummaryBySort (data) {
+      this.sortHandle(data.fromLevel, data.toLevel, data.oldIndex, data.newIndex)
+    },
   	updateSummary () {
   		let lines = []
   		if (this.summary.chapters && this.summary.chapters.length) {
@@ -97,9 +118,15 @@ export default {
         content,
         'utf8'
       )
-
-      return content
+      this.parseSummary(content)
   	},
+    parseSummary (content) {
+      const parser = gitbookParsers.get('markdown')
+      const self = this
+      parser.summary(content).then(function (summary) {
+        self.summary = summary
+      })
+    },
   	buildDirectory (directory, result, level) {
   		const _this = this;
   		let template = '* [title](path)'
@@ -148,7 +175,12 @@ export default {
     },
     createArticle () {
       if (this.articleName && this.articlePath) {
-        const result = this.actionHandle(this.contextItem)
+        let result;
+        if (this.actionType === 'new_section_outer') {
+          result = this.actionHandle({level: this.summary.chapters.length})
+        } else {
+          result = this.actionHandle(this.contextItem)
+        }
         if (!result) {
           this.articleName = ''
           this.articlePath = ''
@@ -173,8 +205,15 @@ export default {
       this.articleName = this.contextItem.title
       this.articlePath = this.contextItem.path 
     },
-    actionHandle (target) {
-      let levels = target.level ? target.level.split('.') : [this.summary.chapters.length]
+    findArticle (levelString) {
+      if (!levelString) {
+        return {
+          parent: null,
+          article: this.summary.chapters,
+          level: 0
+        }
+      }
+      let levels = levelString.split('.')
       let level = levels.shift()
       let article = this.summary.chapters[level]
       let parent = this.summary.chapters
@@ -185,6 +224,44 @@ export default {
         article = article.articles[level]
       }
 
+      return {
+        parent,
+        article,
+        level
+      }
+
+    },
+    sortHandle (fromLevel, toLevel, oldIndex, newIndex) {
+      if (fromLevel == toLevel && oldIndex == newIndex) return;
+      let fromResult = this.findArticle(fromLevel)
+      let toResult = this.findArticle(toLevel)
+
+      let fromSection = fromResult.parent ? fromResult.article.articles : fromResult.article
+      let toSection = toResult.parent ? toResult.article.articles : toResult.article
+
+
+      const article = {
+        title: fromSection[oldIndex].title,
+        path: fromSection[oldIndex].path,
+        articles: fromSection[oldIndex].articles,
+        level: toResult.article.level + '.' + newIndex
+      }
+      if (fromSection == toSection) {
+        fromSection.splice(oldIndex, 1)
+        toSection.splice(newIndex, 0, article)
+      } else {
+        fromSection.splice(oldIndex, 1)
+        toSection.splice(newIndex, 0, article)
+      }
+      this.updateSummary()
+    },
+    actionHandle (target) {
+      const levels = target.level
+      const result = this.findArticle(levels)
+      
+      let parent = result.parent,
+          article = result.article,
+          level = result.level;
       if (this.actionType === 'delete') {
         // 底下没有文章,把自个删了；底下有文章，把文章移到父级下，把自个删了
         if (article.articles.length === 0) {
@@ -197,7 +274,7 @@ export default {
         }  
       }
 
-      if (~['new_article', 'new_section', 'edit_article'].indexOf(this.actionType)) {
+      if (~['new_article', 'new_section', 'new_section_outer', 'edit_article'].indexOf(this.actionType)) {
         const filePath = path.join(this.rootPath, this.articlePath);
         let createResult;
 
@@ -215,7 +292,7 @@ export default {
               articles: []
             })
           }
-          if (this.actionType === 'new_section') {
+          if (this.actionType === 'new_section' || this.actionType === 'new_section_outer') {
             parent.splice(parseInt(level) + 1, 0, {
               title: this.articleName,
               path: this.articlePath,
@@ -228,7 +305,7 @@ export default {
           }
         }          
       }
-      this.content = this.updateSummary()
+      this.updateSummary()
     }
   }
 }

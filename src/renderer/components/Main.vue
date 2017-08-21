@@ -105,5 +105,9 @@
     background: rgba(0,0,0,.05);
   }
 
+  .sortable-blank-space {
+    visibility: hidden;
+  }
+
 
 </style>

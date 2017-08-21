@@ -1,6 +1,5 @@
 <template>
-		<!-- <textarea :value="input" @input="update"></textarea> -->
-		<!-- <div class="preview gitbook-markdown-body" v-html="compiledMarkdown"></div> -->
+  
     <markdown-editor v-model="input" ref="markdownEditor" :configs="configs" preview-class="gitbook-markdown-body"></markdown-editor>
 </template>
 
@@ -21,23 +20,34 @@ const markdown = new MarkupIt(markdownSyntax);
 const html = new MarkupIt(htmlSyntax);
 
 import markdownEditor from './markdown-editor'
+import Modal from '../Unit/modal'
 import { mapGetters } from 'vuex'
 
 export default {
 
   name: 'Editor',
 
-  components: { markdownEditor },
+  components: { markdownEditor, Modal },
 
   data () {
   	return {
     	input: '',
       timer: null,
+      linkModalVisible: false,
+      linkPath: '',
+      linkTitle: '',
       configs: {
         autofocus: true,
         spellChecker: false,
         status: false,
-        toolbar: ['bold', 'italic', 'strikethrough', '|', 'link', 'image', 'table', '|', 'heading', 'heading-1', 'heading-2', 'heading-3', '|', 'quote', 'ordered-list', 'unordered-list', 'side-by-side', 'fullscreen'],
+        toolbar: ['bold', 'italic', 'strikethrough', '|', {
+          name: 'link',
+          action: () => {
+            this.linkModalVisible = true
+          },
+          className: 'fa fa-link',
+          title: '链接'
+        }, 'image', 'table', '|', 'heading', 'heading-1', 'heading-2', 'heading-3', '|', 'quote', 'ordered-list', 'unordered-list', 'side-by-side', 'fullscreen'],
         previewRender: function (plainText) {
           const content = markdown.toContent(plainText)
           return html.toText(content)
@@ -70,6 +80,26 @@ export default {
     }
   },
   methods: {
+    chooseFile () {
+      let filePath = dialog.showOpenDialog({properties: ['openFile'], defaultPath: this.rootPath})
+
+      if (filePath) {
+        filePath = filePath[0]
+        if (~filePath.indexOf(this.rootPath)) {
+          this.articlePath = filePath.replace(this.rootPath, '')
+        }
+      }
+    },
+    toggleModal (show) {
+      if (show === false) {
+        this.linkModalVisible = false
+        this.linkTitle = ''
+        this.linkPath = ''
+      }
+    },
+    insertLink () {
+      this.simplemde.drawLink()
+    },
     doSave () {
       fs.writeFileSync(
         this.filePath,
