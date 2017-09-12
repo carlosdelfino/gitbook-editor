@@ -47,6 +47,7 @@ export default {
       imageModalVisible: false,
       imagePath: '',
       imageTitle: '',
+      defaultImagePath: '',
       configs: {
         autoDownloadFontAwesome: false,
         autofocus: true,
@@ -71,6 +72,13 @@ export default {
           },
           className: 'fa fa-picture-o',
           title: '插入图片'
+        }, {
+          name: 'multi-image',
+          action: () => {
+            this.insertMultiImage()
+          },
+          className: 'fa fa-file-o',
+          title: '插入多图'
         }, 'table', '|', 'heading', 'heading-1', 'heading-2', 'heading-3', '|', 'quote', 'ordered-list', 'unordered-list', 'side-by-side', 'fullscreen'],
         previewRender: function (plainText) {
           const content = markdownState.deserializeToDocument(plainText);
@@ -118,10 +126,11 @@ export default {
   },
   methods: {
     chooseFile () {
-      let filePath = dialog.showOpenDialog({properties: ['openFile'], defaultPath: this.currentLibrary.path})
+      let filePaths = dialog.showOpenDialog({properties: ['openFile'], defaultPath: this.defaultImagePath || this.currentLibrary.path})
 
-      if (filePath) {
-        filePath = filePath[0]
+      if (filePaths && filePaths.length) {
+        let filePath = filePaths[0]
+        this.defaultImagePath = path.dirname(filePath)
         if (~filePath.indexOf(this.currentLibrary.path)) {
           this.imagePath = path.relative(path.dirname(this.filePath), filePath)
         }
@@ -153,6 +162,24 @@ export default {
         this.imageModalVisible = false
         this.imageTitle = ''
         this.imagePath = ''  
+      }
+    },
+    insertMultiImage () {
+      let self = this
+      let filePaths = dialog.showOpenDialog({properties: ['openFile', 'multiSelections'], defaultPath: this.defaultImagePath || this.currentLibrary.path})
+
+      let imagePath = ''
+
+      if (filePaths.length) {
+        let filePath = filePaths[0]
+        this.defaultImagePath = path.dirname(filePath)
+        filePaths.forEach(function (filePath) {
+          if (~filePath.indexOf(self.currentLibrary.path)) {
+            imagePath = path.relative(path.dirname(self.filePath), filePath)
+            self.simplemde.options.insertTexts.image = ["\n", "![](" + imagePath + ")"]
+            self.simplemde.drawImage()
+          }
+        })
       }
     },
     doSave () {
