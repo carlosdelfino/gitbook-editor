@@ -72,7 +72,7 @@ export default {
 		position: absolute;
 		top: 50%;
 		transform: translateY(-50%);
-		margin-left: 5px;
+		margin-left: 10px;
 	}
 	.info .title {
 		font-weight: bold;

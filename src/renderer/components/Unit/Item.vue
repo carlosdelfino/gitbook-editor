@@ -4,14 +4,14 @@
       @contextmenu.stop.prevent="showContext"
     	@click="edit"
       @dblclick="edit"
-      :class="{block: true, folder: isFolder, active: activePath === model.path}">
+      :class="{block: true, folder: isFolder, active: activePath === model.path, disabled: invalidPath}">
       {{model.introduction ? model.title : model.level + '. ' + model.title}}
     </div>
     <ul v-show="open" v-if="isFolder" class="articles" ref="articleList">
       <item
         class="item"
         v-for="model in model.articles"
-        :model="model" :key="model.level" @sort="sortSummary" @context="showContext">
+        :model="model" :key="model.title" @sort="sortSummary" @context="showContext">
       </item>
     </ul>
   </li>
@@ -40,7 +40,10 @@ export default {
   	}),
   	isFolder () {
   		return this.model.articles.length > 0
-  	}
+  	},
+    invalidPath () {
+      return !this.model.path || !this.model.path.endsWith('.md')
+    }
   },
   watch: {
     'model.articles' () {
@@ -58,7 +61,11 @@ export default {
   		this.open = !this.open
   	},
   	edit () {
-  		this.setPath(this.model.path)
+      if (this.invalidPath) {
+        return;
+      } else {
+        this.setPath(this.model.path)        
+      }
   	},
     showContext (event) {
       this.$emit('context', {
@@ -127,6 +134,10 @@ li > div, li > input {
 
 li > div:hover {
 	color: #00C28B;
+}
+
+li > div.disabled:hover {
+  color: inherit;
 }
 
 .item {

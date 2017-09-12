@@ -1,7 +1,9 @@
-import { app, BrowserWindow, dialog, ipcMain } from 'electron'
+import { app, BrowserWindow, dialog, ipcMain, Menu } from 'electron'
 
 const Store = require('electron-store');
 const store = new Store();
+
+const menu = require('./menu.js')
 
 /**
  * Set `__static` path to static files in production
@@ -37,6 +39,9 @@ function createWindow () {
     mainWindow = null
   })
 
+  // mainWindow.webContents.openDevTools()
+
+  Menu.setApplicationMenu(menu)
 
   ipcMain.on('openLibrary', (event, arg) => {
     openMainWindow()

@@ -23,6 +23,7 @@ const actions = {
   },
   setLibrary ({ commit }, library) {
     commit('SET_LIBRARY', library)
+    localStorage.clear()
     localStorage.setItem('library', JSON.stringify(library))
   }
 }

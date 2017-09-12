@@ -17,7 +17,7 @@
     "postinstall": ""
   },
   "build": {
-    "productName": "editor",
+    "productName": "TickEditor",
     "appId": "org.simulatedgreg.electron-vue",
     "directories": {
       "output": "build"
@@ -56,7 +56,7 @@
     "electron-store": "^1.2.0",
     "gitbook-markdown": "^2.0.1",
     "gitbook-parsers": "^0.8.9",
-    "markup-it": "2.5.0",
+    "markup-it": "4.0.0-pre.1",
     "slate": "0.21.2",
     "vue": "^2.3.3",
     "vue-electron": "^1.0.6",

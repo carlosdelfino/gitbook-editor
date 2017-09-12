@@ -1,7 +1,7 @@
 <template>
   <div class="tree">
     <ul ref="articleList">
-      <item :model="chapter" v-for="chapter in summary.chapters" class="item" :key="chapter.level" @context="showContext" @sort="updateSummaryBySort"></item>
+      <item :model="chapter" v-for="chapter in summary.chapters" class="item" :key="chapter.title" @context="showContext" @sort="updateSummaryBySort"></item>
     </ul>
     <div class="create-btn" @click="toggleModal(true);actionType='new_section_outer'">新建层级</div>
     <context-menu class="right-menu"
@@ -135,13 +135,20 @@ export default {
     },
   	buildDirectory (directory, result, level) {
   		const _this = this;
-  		let template = '* [title](path)'
+      if (directory.path) {
+        const template = '* [title](path)'
 
-  		result.push(
-  			new Array(level + 1).join('  ') + 
-  			template.replace('title', directory.title)
-  							.replace('path', directory.path)
-  		)
+        result.push(
+          new Array(level + 1).join('  ') + 
+          template.replace('title', directory.title)
+                  .replace('path', directory.path)
+        )  
+      } else {
+        const template = '* title'
+        result.push(
+          new Array(level + 1).join('  ') + template.replace('title', directory.title)
+        )
+      }  		
 
 			directory.articles.forEach(function (article) {
 				_this.buildDirectory(article, result, level + 1)
@@ -180,7 +187,7 @@ export default {
       
     },
     createArticle () {
-      if (this.articleName && this.articlePath) {
+      if (this.articleName) {
         let result;
         if (this.actionType === 'new_section_outer') {
           result = this.actionHandle({level: this.summary.chapters.length})

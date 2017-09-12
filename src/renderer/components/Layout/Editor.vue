@@ -14,16 +14,17 @@
 </template>
 
 <script>
-const MarkupIt = require('markup-it');
-const markdownSyntax = require('markup-it/syntaxes/markdown');
-const htmlSyntax = require('markup-it/syntaxes/html');
 
 const fs = require('fs');
 const path = require('path');
 const {dialog} = require('electron').remote;
 
-const markdown = new MarkupIt(markdownSyntax);
-const html = new MarkupIt(htmlSyntax);
+const { State } = require('markup-it');
+const markdown = require('markup-it/lib/markdown');
+const html = require('markup-it/lib/html');
+
+const markdownState = State.create(markdown);
+const htmlState = State.create(html);
 
 import markdownEditor from './markdown-editor'
 import Modal from '../Unit/modal'
@@ -36,8 +37,9 @@ export default {
   components: { markdownEditor, Modal },
 
   data () {
+    const self = this;
   	return {
-    	input: '',
+      input: '',
       timer: null,
       linkModalVisible: false,
       linkPath: '',
@@ -71,8 +73,20 @@ export default {
           title: '插入图片'
         }, 'table', '|', 'heading', 'heading-1', 'heading-2', 'heading-3', '|', 'quote', 'ordered-list', 'unordered-list', 'side-by-side', 'fullscreen'],
         previewRender: function (plainText) {
-          const content = markdown.toContent(plainText)
-          return html.toText(content)
+          const content = markdownState.deserializeToDocument(plainText);
+          let htmlText = htmlState.serializeDocument(content);
+          htmlText = htmlText.replace(/<img[^>]+src="([^"]+)"[^>]*>/g, 
+          function(match, contents)
+            {
+              if (contents.startsWith('http')) {
+                return match
+              } else {
+                return match.replace(contents, path.join(path.dirname(self.filePath), contents))
+              }
+            }
+          )
+          return htmlText
+          
         }
       }
   	}
@@ -109,7 +123,7 @@ export default {
       if (filePath) {
         filePath = filePath[0]
         if (~filePath.indexOf(this.currentLibrary.path)) {
-          this.imagePath = filePath.replace(this.currentLibrary.path, '')
+          this.imagePath = path.relative(path.dirname(this.filePath), filePath)
         }
       }
     },
@@ -161,12 +175,18 @@ export default {
         this.doSave()
       }
     })
+    if (this.filePath) {
+      this.input = fs.readFileSync(
+        this.filePath,
+        'utf8'
+      )
+    }
   }
 };
 </script>
 
 <style lang="css">
-.markdown-editor .editor-toolbar {
+.markdown-editor .editor-toolbar.fullscreen {
   border: none;
   right: 0;
   position: fixed;
