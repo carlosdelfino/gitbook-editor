@@ -11,7 +11,7 @@
       <item
         class="item"
         v-for="model in model.articles"
-        :model="model" :key="model.title" @sort="sortSummary" @context="showContext">
+        :model="model" :key="model.level" @sort="sortSummary" @context="showContext">
       </item>
     </ul>
   </li>
@@ -89,6 +89,7 @@ export default {
         this.sortable = new Sortable(this.$refs.articleList, {
           group: "articles",
           animation: 150,
+          draggable: ".item",
           onStart (evt) {
             const regexp = evt.to.parentNode.querySelector('.block').innerText.match(/([\d\.]+)\.\s/)
             fromSection = regexp && regexp[1]

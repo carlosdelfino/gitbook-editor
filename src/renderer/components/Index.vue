@@ -14,7 +14,7 @@
 		</main>
 		<footer>
 			<div class="create-panel" v-if="createPanelVisible">
-				<input type="text" placeholder="项目名称" v-model="libraryName">
+				<input type="text" placeholder="项目名称" v-model="libraryName" v-focus>
 				<input type="text" placeholder="项目路径" v-model="libraryPath" @click="chooseFile">
 			</div>
 			<button class="btn-primary" @click="createLibrary" :disabled="createPanelVisible && (!libraryPath || !libraryName)">新建项目</button>
@@ -43,7 +43,15 @@ export default {
     	libraryPath: '',
     	createPanelVisible: false
     };
-  },
+	},
+	directives: {
+		focus: {
+			// 指令的定义
+			inserted: function (el) {
+				el.focus()
+			}
+		}
+	},
   computed: {
   	filtedLibrarys () {
   		return this.librarys.filter((library) => {

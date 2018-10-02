@@ -219,6 +219,7 @@ export default {
       this.articlePath = this.contextItem.path 
     },
     findArticle (levelString) {
+      // 根据level获取父，祖父，父索引
       if (!levelString) {
         return {
           parent: null,
@@ -259,13 +260,9 @@ export default {
         articles: fromSection[oldIndex].articles,
         level: toResult.article.level + '.' + newIndex
       }
-      if (fromSection == toSection) {
-        fromSection.splice(oldIndex, 1)
-        toSection.splice(newIndex, 0, article)
-      } else {
-        fromSection.splice(oldIndex, 1)
-        toSection.splice(newIndex, 0, article)
-      }
+      
+      fromSection.splice(oldIndex, 1)
+      toSection.splice(newIndex, 0, article)
       this.updateSummary()
     },
     actionHandle (target) {
